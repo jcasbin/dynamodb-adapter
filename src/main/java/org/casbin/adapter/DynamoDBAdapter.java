@@ -14,8 +14,11 @@
 
 package org.casbin.adapter;
 
+import org.casbin.jcasbin.main.Enforcer;
+import org.casbin.jcasbin.model.Assertion;
 import org.casbin.jcasbin.model.Model;
 import org.casbin.jcasbin.persist.Adapter;
+import org.casbin.jcasbin.persist.Helper;
 
 import java.util.*;
 
@@ -23,13 +26,27 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+
+
+class CasbinRule {
+    String ptype;
+    String v0;
+    String v1;
+    String v2;
+    String v3;
+    String v4;
+    String v5;
+}
 
 /**
  * DynamoDBAdapter is the AWS DynamoDB adapter for jCasbin 
@@ -41,9 +58,9 @@ public class DynamoDBAdapter implements Adapter
     private Table table;
 
     public static void main(String[] args) {
+        Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
         DynamoDBAdapter a = new DynamoDBAdapter("http://localhost:8000", "cn-north-1");
-        a.createTable();
-        a.dropTable();
+        a.savePolicy(e.getModel());
     }
 
     public DynamoDBAdapter(String serviceEndpoint, String signingRegion) {
@@ -59,16 +76,16 @@ public class DynamoDBAdapter implements Adapter
         }
     }
 
-    public void createTable() {
+    private void createTable() {
         try {
             System.out.println("Attempting to create table; please wait...");
-            Table table = this.dynamoDB.createTable(
+            this.table = this.dynamoDB.createTable(
                 "casbin_rule",
-                Arrays.asList(new KeySchemaElement("ID", KeyType.HASH)),
-                Arrays.asList(new AttributeDefinition("ID", ScalarAttributeType.S)),
+                Arrays.asList(new KeySchemaElement("ptype", KeyType.HASH)),
+                Arrays.asList(new AttributeDefinition("ptype", ScalarAttributeType.S)),
                 new ProvisionedThroughput(10L, 10L)
             );
-            table.waitForActive();
+            this.table.waitForActive();
             System.out.println("Table is created!");
         } 
         catch (Exception e) {
@@ -77,16 +94,62 @@ public class DynamoDBAdapter implements Adapter
     }
 
     private void dropTable() {
-        Table table = this.dynamoDB.getTable("casbin_rule");
+        this.table = this.dynamoDB.getTable("casbin_rule");
         try {
             System.out.println("Attempting to delete table; please wait...");
-            table.delete();
-            table.waitForDelete();
-            System.out.print("Success.");
+            this.table.delete();
+            this.table.waitForDelete();
+            System.out.println("Success.");
         }
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private List<CasbinRule> getAllItem() {
+        System.out.println("getAllItem() started");
+        List<CasbinRule> rules = new ArrayList<>();
+        ScanSpec scanSpec = new ScanSpec();
+        ItemCollection<ScanOutcome> items = this.table.scan(scanSpec);
+        Iterator<Item> iter = items.iterator();
+        while (iter.hasNext()) {
+            Item item = iter.next();
+            CasbinRule line = new CasbinRule();
+            line.ptype = item.get("ptype").toString();
+            line.v0 = item.get("v0").toString();
+            line.v1 = item.get("v1").toString();
+            line.v2 = item.get("v2").toString();
+            line.v3 = item.get("v3").toString();
+            line.v4 = item.get("v4").toString();
+            line.v5 = item.get("v5").toString();
+            rules.add(line);
+        }
+        System.out.println("getAllItem() done!");
+        return rules;
+    }
+
+    private void loadPolicyLine(CasbinRule line, Model model) {
+        String lineText = line.ptype;
+        if (!line.v0.equals("")) {
+            lineText += ", " + line.v0;
+        }
+        if (!line.v1.equals("")) {
+            lineText += ", " + line.v1;
+        }
+        if (!line.v2.equals("")) {
+            lineText += ", " + line.v2;
+        }
+        if (!line.v3.equals("")) {
+            lineText += ", " + line.v3;
+        }
+        if (!line.v4.equals("")) {
+            lineText += ", " + line.v4;
+        }
+        if (!line.v5.equals("")) {
+            lineText += ", " + line.v5;
+        }
+
+        Helper.loadPolicyLine(lineText, model);
     }
 
     /**
@@ -94,15 +157,81 @@ public class DynamoDBAdapter implements Adapter
      */
     @Override
     public void loadPolicy(Model model) {
-        throw new Error("not implemented");
+        List<CasbinRule> rules = getAllItem();
+        for (CasbinRule line : rules) {
+            loadPolicyLine(line, model);
+        }
+    }
+
+    private CasbinRule savePolicyLine(String ptype, List<String> rule) {
+        CasbinRule line = new CasbinRule();
+
+        line.ptype = ptype;
+        if (rule.size() > 0) {
+            line.v0 = rule.get(0);
+        }
+        if (rule.size() > 1) {
+            line.v1 = rule.get(1);
+        }
+        if (rule.size() > 2) {
+            line.v2 = rule.get(2);
+        }
+        if (rule.size() > 3) {
+            line.v3 = rule.get(3);
+        }
+        if (rule.size() > 4) {
+            line.v4 = rule.get(4);
+        }
+        if (rule.size() > 5) {
+            line.v5 = rule.get(5);
+        }
+
+        return line;
     }
     
+    private void putCasbinRuleItem(CasbinRule line) {
+        Item item = new Item().withPrimaryKey("ptype", line.ptype)
+                                .with("v0", line.v0)
+                                .with("v1", line.v1)
+                                .with("v2", line.v2)
+                                .with("v3", line.v3)
+                                .with("v4", line.v4)
+                                .with("v5", line.v5);
+        this.table.putItem(item);
+    }
+
+
     /**
      * svePolicy saves all policy rules to the storage.
      */
     @Override
     public void savePolicy(Model model) {
-        throw new Error("not implemented");
+        this.dropTable();
+        this.createTable();
+        System.out.println("Attempting to write policies...");
+        try {
+            for (Map.Entry<String, Assertion> entry : model.model.get("p").entrySet()) {
+                    String ptype = entry.getKey();
+                    Assertion ast = entry.getValue();
+                    for (List<String> rule : ast.policy) {
+                        CasbinRule line = savePolicyLine(ptype, rule);
+                        putCasbinRuleItem(line);
+                    }
+            }
+
+            for (Map.Entry<String, Assertion> entry : model.model.get("g").entrySet()) {
+                String ptype = entry.getKey();
+                Assertion ast = entry.getValue();
+                for (List<String> rule : ast.policy) {
+                    CasbinRule line = savePolicyLine(ptype, rule);
+                    putCasbinRuleItem(line);
+                }
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("savePolicy() Done!");
     }
 
     /**
