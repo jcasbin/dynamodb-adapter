@@ -15,14 +15,19 @@
 package org.casbin.adapter;
 
 import org.junit.Test;
-
+import org.casbin.jcasbin.main.Enforcer;
 import org.junit.Assert;
 
 public class DynamoDBAdapterTest 
 {
     @Test
-    public void testGetItem() {
-        DynamoDBAdapter adapter = new DynamoDBAdapter("http://localhost:8000", "cn-north-1");
-        Assert.assertEquals("2004", adapter.GetItem(2004, "Alexander"));
+    public void testAdapter() {
+        // Load the policy from the file adapter (.csv) first
+        Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
+
+        DynamoDBAdapter a = new DynamoDBAdapter("http://localhost:8000", "cn-north-1");
+
+        // Save the current policy to DB
+        a.savePolicy(e.getModel());
     }
 }
