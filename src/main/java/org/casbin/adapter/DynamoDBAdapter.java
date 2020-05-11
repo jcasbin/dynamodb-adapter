@@ -61,6 +61,7 @@ public class DynamoDBAdapter implements Adapter
         Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
         DynamoDBAdapter a = new DynamoDBAdapter("http://localhost:8000", "cn-north-1");
         a.savePolicy(e.getModel());
+        a.loadPolicy(e.getModel());
     }
 
     public DynamoDBAdapter(String serviceEndpoint, String signingRegion) {
@@ -76,13 +77,13 @@ public class DynamoDBAdapter implements Adapter
         }
     }
 
-    private void createTable() {
+    public void createTable() {
         try {
             System.out.println("Attempting to create table; please wait...");
             this.table = this.dynamoDB.createTable(
                 "casbin_rule",
-                Arrays.asList(new KeySchemaElement("ptype", KeyType.HASH)),
-                Arrays.asList(new AttributeDefinition("ptype", ScalarAttributeType.S)),
+                Arrays.asList(new KeySchemaElement("ID", KeyType.HASH)),
+                Arrays.asList(new AttributeDefinition("ID", ScalarAttributeType.S)),
                 new ProvisionedThroughput(10L, 10L)
             );
             this.table.waitForActive();
@@ -93,7 +94,7 @@ public class DynamoDBAdapter implements Adapter
         }
     }
 
-    private void dropTable() {
+    public void dropTable() {
         this.table = this.dynamoDB.getTable("casbin_rule");
         try {
             System.out.println("Attempting to delete table; please wait...");
@@ -116,12 +117,12 @@ public class DynamoDBAdapter implements Adapter
             Item item = iter.next();
             CasbinRule line = new CasbinRule();
             line.ptype = item.get("ptype").toString();
-            line.v0 = item.get("v0").toString();
-            line.v1 = item.get("v1").toString();
-            line.v2 = item.get("v2").toString();
-            line.v3 = item.get("v3").toString();
-            line.v4 = item.get("v4").toString();
-            line.v5 = item.get("v5").toString();
+            line.v0 = item.get("v0") != null ? item.get("v0").toString() : "";
+            line.v1 = item.get("v1") != null ? item.get("v1").toString() : "";
+            line.v2 = item.get("v2") != null ? item.get("v2").toString() : "";
+            line.v3 = item.get("v3") != null ? item.get("v3").toString() : "";
+            line.v4 = item.get("v4") != null ? item.get("v4").toString() : "";
+            line.v5 = item.get("v5") != null ? item.get("v5").toString() : "";
             rules.add(line);
         }
         System.out.println("getAllItem() done!");
@@ -190,7 +191,8 @@ public class DynamoDBAdapter implements Adapter
     }
     
     private void putCasbinRuleItem(CasbinRule line) {
-        Item item = new Item().withPrimaryKey("ptype", line.ptype)
+        Item item = new Item().withPrimaryKey("ID", UUID.randomUUID().toString())
+                                .with("ptype", line.ptype)
                                 .with("v0", line.v0)
                                 .with("v1", line.v1)
                                 .with("v2", line.v2)

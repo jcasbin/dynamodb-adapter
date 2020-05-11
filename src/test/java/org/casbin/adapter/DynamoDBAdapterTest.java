@@ -16,18 +16,49 @@ package org.casbin.adapter;
 
 import org.junit.Test;
 import org.casbin.jcasbin.main.Enforcer;
-import org.junit.Assert;
+import org.casbin.jcasbin.util.Util;
+
+import java.util.List;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.fail;
 
 public class DynamoDBAdapterTest 
 {
+
+    private static void testGetPolicy(Enforcer e, List<List<String>> res) {
+        List<List<String>> myRes = e.getPolicy();
+        Util.logPrint("Policy: " + myRes);
+
+        // The input order cannot be preserved in DynamoDB
+        // Therefore, Array2DEquals cannot be used as the evaluation functionality here.
+        if (!TestUtils.setOfArrayEquals(res, myRes)) {
+            fail("Policy: " + myRes + ", supposed to be " + res);
+        }
+    }
+
     @Test
     public void testAdapter() {
         // Load the policy from the file adapter (.csv) first
         Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
 
-        DynamoDBAdapter a = new DynamoDBAdapter("http://localhost:8000", "cn-north-1");
+        String endpoint = "http://localhost:8000";
+        String region = "cn-north-1";
+
+        DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
 
         // Save the current policy to DB
         a.savePolicy(e.getModel());
+
+        // Clear the current policy.
+        e.clearPolicy();
+        
+        // Load the policy from DB
+        a.loadPolicy(e.getModel());
+        testGetPolicy(e, asList(
+            asList("alice", "data1", "read"),
+            asList("bob", "data2", "write"),
+            asList("data2_admin", "data2", "read"),
+            asList("data2_admin", "data2", "write")));
     }
 }
