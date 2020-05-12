@@ -59,26 +59,22 @@ public class DynamoDBAdapter implements Adapter
     public static void main(String[] args) {
         Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
         DynamoDBAdapter a = new DynamoDBAdapter("http://localhost:8000", "cn-north-1");
+        
         a.savePolicy(e.getModel());
         a.loadPolicy(e.getModel());
     }
 
     public DynamoDBAdapter(String serviceEndpoint, String signingRegion) {
-        try {
-            this.client = AmazonDynamoDBClientBuilder
-                            .standard()
-                            .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(serviceEndpoint, signingRegion))
-                            .build();
-    
-            this.dynamoDB = new DynamoDB(this.client);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.client = AmazonDynamoDBClientBuilder
+                        .standard()
+                        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(serviceEndpoint, signingRegion))
+                        .build();
+
+        this.dynamoDB = new DynamoDB(this.client);
     }
 
     public void createTable() {
         try {
-            System.out.println("Attempting to create table; please wait...");
             this.table = this.dynamoDB.createTable(
                 "casbin_rule",
                 Arrays.asList(new KeySchemaElement("ID", KeyType.HASH)),
@@ -86,11 +82,12 @@ public class DynamoDBAdapter implements Adapter
                 new ProvisionedThroughput(10L, 10L)
             );
             this.table.waitForActive();
-            System.out.println("Table is created!");
-        } 
+        }
         catch (Exception e) {
             e.printStackTrace();
+            throw new Error(e);
         }
+        
     }
 
     public void dropTable() {
@@ -101,6 +98,7 @@ public class DynamoDBAdapter implements Adapter
         }
         catch (Exception e) {
             e.printStackTrace();
+            throw new Error(e);
         }
     }
 
@@ -205,27 +203,22 @@ public class DynamoDBAdapter implements Adapter
     public void savePolicy(Model model) {
         this.dropTable();
         this.createTable();
-        try {
-            for (Map.Entry<String, Assertion> entry : model.model.get("p").entrySet()) {
-                    String ptype = entry.getKey();
-                    Assertion ast = entry.getValue();
-                    for (List<String> rule : ast.policy) {
-                        CasbinRule line = savePolicyLine(ptype, rule);
-                        putCasbinRuleItem(line);
-                    }
-            }
-
-            for (Map.Entry<String, Assertion> entry : model.model.get("g").entrySet()) {
+        for (Map.Entry<String, Assertion> entry : model.model.get("p").entrySet()) {
                 String ptype = entry.getKey();
                 Assertion ast = entry.getValue();
                 for (List<String> rule : ast.policy) {
                     CasbinRule line = savePolicyLine(ptype, rule);
                     putCasbinRuleItem(line);
                 }
-            }
         }
-        catch (Exception e) {
-            e.printStackTrace();
+
+        for (Map.Entry<String, Assertion> entry : model.model.get("g").entrySet()) {
+            String ptype = entry.getKey();
+            Assertion ast = entry.getValue();
+            for (List<String> rule : ast.policy) {
+                CasbinRule line = savePolicyLine(ptype, rule);
+                putCasbinRuleItem(line);
+            }
         }
     }
 
