@@ -97,10 +97,8 @@ public class DynamoDBAdapter implements Adapter
     public void dropTable() {
         this.table = this.dynamoDB.getTable("casbin_rule");
         try {
-            System.out.println("Attempting to delete table; please wait...");
             this.table.delete();
             this.table.waitForDelete();
-            System.out.println("Success.");
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -108,7 +106,6 @@ public class DynamoDBAdapter implements Adapter
     }
 
     private List<CasbinRule> getAllItem() {
-        System.out.println("getAllItem() started");
         List<CasbinRule> rules = new ArrayList<>();
         ScanSpec scanSpec = new ScanSpec();
         ItemCollection<ScanOutcome> items = this.table.scan(scanSpec);
@@ -125,7 +122,6 @@ public class DynamoDBAdapter implements Adapter
             line.v5 = item.get("v5") != null ? item.get("v5").toString() : "";
             rules.add(line);
         }
-        System.out.println("getAllItem() done!");
         return rules;
     }
 
@@ -210,7 +206,6 @@ public class DynamoDBAdapter implements Adapter
     public void savePolicy(Model model) {
         this.dropTable();
         this.createTable();
-        System.out.println("Attempting to write policies...");
         try {
             for (Map.Entry<String, Assertion> entry : model.model.get("p").entrySet()) {
                     String ptype = entry.getKey();
@@ -233,7 +228,6 @@ public class DynamoDBAdapter implements Adapter
         catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("savePolicy() Done!");
     }
 
     /**
