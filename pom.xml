@@ -6,9 +6,9 @@
 
   <groupId>org.casbin.adapter</groupId>
   <artifactId>dynamodb-adapter</artifactId>
-  <version>v0.0.1</version>
+  <version>0.0.1</version>
 
-  <name>DynamoDB Adapter for JCasbin</name>
+  <name>DynamoDB Adapter for J.Casbin</name>
   <url>https://github.com/jcasbin/dynamodb-adapter</url>
 
   <properties>
