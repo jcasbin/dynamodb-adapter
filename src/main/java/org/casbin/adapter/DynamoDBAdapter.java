@@ -84,7 +84,6 @@ public class DynamoDBAdapter implements Adapter
             this.table.waitForActive();
         }
         catch (Exception e) {
-            e.printStackTrace();
             throw new Error(e);
         }
         
@@ -97,7 +96,6 @@ public class DynamoDBAdapter implements Adapter
             this.table.waitForDelete();
         }
         catch (Exception e) {
-            e.printStackTrace();
             throw new Error(e);
         }
     }

@@ -4,12 +4,49 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.casbin.adapter</groupId>
+  <groupId>org.casbin</groupId>
   <artifactId>dynamodb-adapter</artifactId>
   <version>0.0.1</version>
 
-  <name>DynamoDB Adapter for J.Casbin</name>
+  <name>DynamoDB Adapter for jCasbin</name>
+  <description>Adapter for JCasbin to load policy from AWS DynamoDB or save policy to it.</description>
   <url>https://github.com/jcasbin/dynamodb-adapter</url>
+  <inceptionYear>2020</inceptionYear>
+
+  <issueManagement>
+    <system>Github</system>
+    <url>https://github.com/jcasbin/dynamodb-adapter/issues</url>
+  </issueManagement>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/jcasbin/dynamodb-adapter</url>
+    <connection>git@github.com:jcasbin/dynamodb-adapter.git</connection>
+    <developerConnection>https://github.com/hsluoyz</developerConnection>
+  </scm>
+  <developers>
+    <developer>
+      <name>Yang Luo</name>
+      <email>hsluoyz@qq.com</email>
+      <url>https://github.com/hsluoyz</url>
+    </developer>
+    <developer>
+      <name>Zihui Liu</name>
+      <email>kingiw@hotmail.com</email>
+      <url>https://github.com/kingiw</url>
+    </developer>
+  </developers>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -27,7 +64,7 @@
     <dependency>
       <groupId>org.casbin</groupId>
       <artifactId>jcasbin</artifactId>
-      <version>1.1.0</version>
+      <version>1.4.0</version>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
