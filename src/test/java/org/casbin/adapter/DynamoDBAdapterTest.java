@@ -47,6 +47,8 @@ public class DynamoDBAdapterTest
 
         DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
 
+        a.createTable();
+
         // Save the current policy to DB
         a.savePolicy(e.getModel());
 
@@ -60,5 +62,6 @@ public class DynamoDBAdapterTest
             asList("bob", "data2", "write"),
             asList("data2_admin", "data2", "read"),
             asList("data2_admin", "data2", "write")));
+        a.dropTable();
     }
 }
