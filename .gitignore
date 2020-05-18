@@ -27,3 +27,5 @@ target
 
 .project
 .classpath
+.settings/
+.factorypath
