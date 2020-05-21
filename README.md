@@ -1,6 +1,8 @@
 DynamoDB Adapter
 ====
 
+[![Build Status](https://travis-ci.org/jcasbin/dynamodb-adapter.svg?branch=master)](https://travis-ci.org/jcasbin/dynamodb-adapter)
+
 DynamoDB Adapter is the [Amazon DynamoDB](https://en.wikipedia.org/wiki/Amazon_DynamoDB) adapter for [jCasbin](https://github.com/casbin/jcasbin), which provides interfaces for loading policies from DynamoDB and saving policies to it. 
 
 Currently we only support fot the following interfaces:

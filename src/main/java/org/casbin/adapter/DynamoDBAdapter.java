@@ -199,8 +199,6 @@ public class DynamoDBAdapter implements Adapter
      */
     @Override
     public void savePolicy(Model model) {
-        this.dropTable();
-        this.createTable();
         for (Map.Entry<String, Assertion> entry : model.model.get("p").entrySet()) {
                 String ptype = entry.getKey();
                 Assertion ast = entry.getValue();
