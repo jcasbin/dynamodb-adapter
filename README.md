@@ -10,7 +10,14 @@ Currently we only support fot the following interfaces:
 - `savePolicy`
 
 ## Installation
-TODO
+```
+<dependency>
+    <groupId>org.casbin</groupId>
+    <artifactId>dynamodb-adapter</artifactId>
+    <version>0.0.1</version>
+</dependency>
+
+```
 
 ## Example
 ```java
