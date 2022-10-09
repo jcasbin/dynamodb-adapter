@@ -1,7 +1,7 @@
 DynamoDB Adapter
 ====
 [![codebeat badge](https://codebeat.co/badges/3afbd52e-7666-4e00-8107-5a34943c1733)](https://codebeat.co/projects/github-com-jcasbin-dynamodb-adapter-master)
-[![Build Status](https://travis-ci.org/jcasbin/dynamodb-adapter.svg?branch=master)](https://travis-ci.org/jcasbin/dynamodb-adapter)
+[![Build Status](https://github.com/jcasbin/dynamodb-adapter/workflows/build/badge.svg)](https://github.com/jcasbin/dynamodb-adapter/actions)
 [![Coverage Status](https://coveralls.io/repos/github/jcasbin/dynamodb-adapter/badge.svg?branch=master)](https://coveralls.io/github/jcasbin/dynamodb-adapter?branch=master)
 [![javadoc](https://javadoc.io/badge2/org.casbin/dynamodb-adapter/javadoc.svg)](https://javadoc.io/doc/org.casbin/dynamodb-adapter)
 [![Maven Central](https://img.shields.io/maven-central/v/org.casbin/dynamodb-adapter.svg)](https://mvnrepository.com/artifact/org.casbin/dynamodb-adapter/latest)
