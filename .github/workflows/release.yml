@@ -22,8 +22,8 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY_ASCII }}
           gpg-passphrase: GPG_PASSPHRASE
 
-      - name: Build with Maven
-        run: mvn clean test
+      #      - name: Build with Maven
+      #        run: mvn clean test
 
       - run: export AWS_ACCESS_KEY_ID=ThisIsTheAccessKeyId
       - run: export AWS_SECRET_ACCESS_KEY=ThisIsRequiredButNotUsed
