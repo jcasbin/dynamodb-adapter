@@ -43,7 +43,7 @@ jobs:
           semantic-release --prepare @conveyal/maven-semantic-release --publish @semantic-release/github,@conveyal/maven-semantic-release --verify-conditions @semantic-release/github,@conveyal/maven-semantic-release --verify-release @conveyal/maven-semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+          GPG_KEY_NAME: ${{ secrets.GPG_PRIVATE_KEY_ASCII }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
           OSSRH_JIRA_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_JIRA_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
