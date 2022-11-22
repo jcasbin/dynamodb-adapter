@@ -31,6 +31,12 @@ jobs:
           docker ps -a
       - run: echo "$AWS_ACCESS_KEY_ID"
 
+      - name: Install dependencies
+        run: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+
+      - name: Run tests and collect coverage
+        run: mvn -B test
+        
       - name: Codecov
         uses: codecov/codecov-action@v1
         with:
