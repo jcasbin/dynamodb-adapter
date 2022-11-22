@@ -37,31 +37,31 @@ public class DynamoDBAdapterTest
         }
     }
 
-    @Test
-    public void testAdapter() {
-        // Load the policy from the file adapter (.csv) first
-        Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
+    // @Test
+    // public void testAdapter() {
+    //     // Load the policy from the file adapter (.csv) first
+    //     Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
 
-        String endpoint = "http://localhost:8000";
-        String region = "cn-north-1";
+    //     String endpoint = "http://localhost:8000";
+    //     String region = "cn-north-1";
 
-        DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
+    //     DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
 
-        a.createTable();
+    //     a.createTable();
 
-        // Save the current policy to DB
-        a.savePolicy(e.getModel());
+    //     // Save the current policy to DB
+    //     a.savePolicy(e.getModel());
 
-        // Clear the current policy.
-        e.clearPolicy();
+    //     // Clear the current policy.
+    //     e.clearPolicy();
         
-        // Load the policy from DB
-        a.loadPolicy(e.getModel());
-        testGetPolicy(e, asList(
-            asList("alice", "data1", "read"),
-            asList("bob", "data2", "write"),
-            asList("data2_admin", "data2", "read"),
-            asList("data2_admin", "data2", "write")));
-        a.dropTable();
-    }
+    //     // Load the policy from DB
+    //     a.loadPolicy(e.getModel());
+    //     testGetPolicy(e, asList(
+    //         asList("alice", "data1", "read"),
+    //         asList("bob", "data2", "write"),
+    //         asList("data2_admin", "data2", "read"),
+    //         asList("data2_admin", "data2", "write")));
+    //     a.dropTable();
+    // }
 }
