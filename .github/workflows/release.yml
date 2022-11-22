@@ -31,6 +31,11 @@ jobs:
           docker ps -a
       - run: echo "$AWS_ACCESS_KEY_ID"
 
+      - name: Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
         with:
