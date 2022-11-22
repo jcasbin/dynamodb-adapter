@@ -31,6 +31,14 @@ jobs:
           docker ps -a
       - run: echo "$AWS_ACCESS_KEY_ID"
 
+      - name: Build with Maven
+        run: mvn clean test cobertura:cobertura
+
+      - name: Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
         with:
@@ -42,7 +50,6 @@ jobs:
           semantic-release --prepare @conveyal/maven-semantic-release --publish @semantic-release/github,@conveyal/maven-semantic-release --verify-conditions @semantic-release/github,@conveyal/maven-semantic-release --verify-release @conveyal/maven-semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
           OSSRH_JIRA_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_JIRA_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
