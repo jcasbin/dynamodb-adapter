@@ -31,11 +31,6 @@ jobs:
           docker ps -a
       - run: echo "$AWS_ACCESS_KEY_ID"
 
-      # - name: Start DynamoDB in GitHub Actions
-      #   uses: rrainn/dynamodb-action@v3.0.0
-      #   with:
-      #     port: 8000
-
       - name: Build with Maven
         run: mvn clean test cobertura:cobertura
 
