@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.casbin.jcasbin.main.Enforcer;
 import org.casbin.jcasbin.util.Util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -37,22 +38,16 @@ public class DynamoDBAdapterTest
         }
     }
 
-    @Test
-    public void testLoadPolicy() {
-        Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
-        e.clearPolicy();
-    }
+     @Test
+     public void testAdapter() {
+         // Load the policy from the file adapter (.csv) first
+         Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
 
-//     @Test
-//     public void testAdapter() {
-//         // Load the policy from the file adapter (.csv) first
-//         Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
-//
-//         String endpoint = "http://localhost:8000";
-//         String region = "cn-north-1";
-//
-//         DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
-//
+         String endpoint = "http://localhost:8000";
+         String region = "cn-north-1";
+
+         DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
+
 //         a.createTable();
 //
 //         // Save the current policy to DB
@@ -69,5 +64,5 @@ public class DynamoDBAdapterTest
 //             asList("data2_admin", "data2", "read"),
 //             asList("data2_admin", "data2", "write")));
 //         a.dropTable();
-//     }
+     }
 }
