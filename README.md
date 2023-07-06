@@ -5,7 +5,7 @@ DynamoDB Adapter
 [![codecov](https://codecov.io/gh/jcasbin/dynamodb-adapter/branch/master/graph/badge.svg?token=QU2JM5GNII)](https://codecov.io/gh/jcasbin/dynamodb-adapter)
 [![javadoc](https://javadoc.io/badge2/org.casbin/dynamodb-adapter/javadoc.svg)](https://javadoc.io/doc/org.casbin/dynamodb-adapter)
 [![Maven Central](https://img.shields.io/maven-central/v/org.casbin/dynamodb-adapter.svg)](https://mvnrepository.com/artifact/org.casbin/dynamodb-adapter/latest)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/casbin/lobby)
+[![Discord](https://img.shields.io/discord/1022748306096537660?logo=discord&label=discord&color=5865F2)](https://discord.gg/S5UjpzGZjN)
 
 DynamoDB Adapter is the [Amazon DynamoDB](https://en.wikipedia.org/wiki/Amazon_DynamoDB) adapter for [jCasbin](https://github.com/casbin/jcasbin), which provides interfaces for loading policies from DynamoDB and saving policies to it. 
 
