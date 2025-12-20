@@ -1,6 +1,5 @@
 DynamoDB Adapter
 ====
-[![codebeat badge](https://codebeat.co/badges/3afbd52e-7666-4e00-8107-5a34943c1733)](https://codebeat.co/projects/github-com-jcasbin-dynamodb-adapter-master)
 [![Build Status](https://github.com/jcasbin/dynamodb-adapter/workflows/build/badge.svg)](https://github.com/jcasbin/dynamodb-adapter/actions)
 [![codecov](https://codecov.io/gh/jcasbin/dynamodb-adapter/branch/master/graph/badge.svg?token=QU2JM5GNII)](https://codecov.io/gh/jcasbin/dynamodb-adapter)
 [![javadoc](https://javadoc.io/badge2/org.casbin/dynamodb-adapter/javadoc.svg)](https://javadoc.io/doc/org.casbin/dynamodb-adapter)
