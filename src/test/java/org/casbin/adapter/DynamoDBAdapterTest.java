@@ -14,9 +14,18 @@
 
 package org.casbin.adapter;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.casbin.jcasbin.main.Enforcer;
 import org.casbin.jcasbin.util.Util;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.utility.DockerImageName;
+
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +35,39 @@ import static org.junit.Assert.fail;
 
 public class DynamoDBAdapterTest 
 {
+    private LocalStackContainer localstack;
+    private DynamoDBAdapter adapter;
+
+    @Before
+    public void setUp() {
+        // Start LocalStack container with DynamoDB service
+        localstack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:latest"))
+                .withServices(LocalStackContainer.Service.DYNAMODB);
+        localstack.start();
+
+        // Create DynamoDB client configured to use LocalStack
+        DynamoDbClient dynamoDbClient = DynamoDbClient.builder()
+                .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.DYNAMODB))
+                .credentialsProvider(
+                        StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(
+                                        localstack.getAccessKey(),
+                                        localstack.getSecretKey()
+                                )
+                        )
+                )
+                .region(Region.of(localstack.getRegion()))
+                .build();
+
+        adapter = new DynamoDBAdapter(dynamoDbClient);
+    }
+
+    @After
+    public void tearDown() {
+        if (localstack != null) {
+            localstack.stop();
+        }
+    }
 
     private static void testGetPolicy(Enforcer e, List<List<String>> res) {
         List<List<String>> myRes = e.getPolicy();
@@ -43,26 +85,21 @@ public class DynamoDBAdapterTest
          // Load the policy from the file adapter (.csv) first
          Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
 
-         String endpoint = "http://localhost:8000";
-         String region = "cn-north-1";
+         adapter.createTable();
 
-         DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
+         // Save the current policy to DB
+         adapter.savePolicy(e.getModel());
 
-//         a.createTable();
-//
-//         // Save the current policy to DB
-//         a.savePolicy(e.getModel());
-//
-//         // Clear the current policy.
-//         e.clearPolicy();
-//
-//         // Load the policy from DB
-//         a.loadPolicy(e.getModel());
-//         testGetPolicy(e, asList(
-//             asList("alice", "data1", "read"),
-//             asList("bob", "data2", "write"),
-//             asList("data2_admin", "data2", "read"),
-//             asList("data2_admin", "data2", "write")));
-//         a.dropTable();
+         // Clear the current policy.
+         e.clearPolicy();
+
+         // Load the policy from DB
+         adapter.loadPolicy(e.getModel());
+         testGetPolicy(e, asList(
+             asList("alice", "data1", "read"),
+             asList("bob", "data2", "write"),
+             asList("data2_admin", "data2", "read"),
+             asList("data2_admin", "data2", "write")));
+         adapter.dropTable();
      }
 }

@@ -20,22 +20,13 @@ import org.casbin.jcasbin.model.Model;
 import org.casbin.jcasbin.persist.Adapter;
 import org.casbin.jcasbin.persist.Helper;
 
+import java.net.URI;
 import java.util.*;
 
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.ItemCollection;
-import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
-import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
-import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
-import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import software.amazon.awssdk.core.waiters.WaiterResponse;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.dynamodb.waiters.DynamoDbWaiter;
 
 class CasbinRule {
     String ptype;
@@ -52,9 +43,8 @@ class CasbinRule {
  */
 public class DynamoDBAdapter implements Adapter
 {
-    private AmazonDynamoDB client;
-    private DynamoDB dynamoDB;
-    private Table table;
+    private DynamoDbClient client;
+    private static final String TABLE_NAME = "casbin_rule";
 
     public static void main(String[] args) {
         Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
@@ -65,59 +55,101 @@ public class DynamoDBAdapter implements Adapter
     }
 
     public DynamoDBAdapter(String serviceEndpoint, String signingRegion) {
-        this.client = AmazonDynamoDBClientBuilder
-                        .standard()
-                        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(serviceEndpoint, signingRegion))
-                        .build();
+        this.client = DynamoDbClient.builder()
+                .endpointOverride(URI.create(serviceEndpoint))
+                .region(software.amazon.awssdk.regions.Region.of(signingRegion))
+                .build();
+    }
 
-        this.dynamoDB = new DynamoDB(this.client);
+    public DynamoDBAdapter(DynamoDbClient client) {
+        this.client = client;
     }
 
     public void createTable() {
         try {
-            this.table = this.dynamoDB.createTable(
-                "casbin_rule",
-                Arrays.asList(new KeySchemaElement("ID", KeyType.HASH)),
-                Arrays.asList(new AttributeDefinition("ID", ScalarAttributeType.S)),
-                new ProvisionedThroughput(10L, 10L)
-            );
-            this.table.waitForActive();
-        }
-        catch (Exception e) {
+            CreateTableRequest request = CreateTableRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .keySchema(KeySchemaElement.builder()
+                            .attributeName("ID")
+                            .keyType(KeyType.HASH)
+                            .build())
+                    .attributeDefinitions(AttributeDefinition.builder()
+                            .attributeName("ID")
+                            .attributeType(ScalarAttributeType.S)
+                            .build())
+                    .provisionedThroughput(ProvisionedThroughput.builder()
+                            .readCapacityUnits(10L)
+                            .writeCapacityUnits(10L)
+                            .build())
+                    .build();
+            
+            client.createTable(request);
+            
+            // Wait for table to be active
+            DynamoDbWaiter waiter = client.waiter();
+            DescribeTableRequest describeRequest = DescribeTableRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .build();
+            WaiterResponse<DescribeTableResponse> waiterResponse = 
+                    waiter.waitUntilTableExists(describeRequest);
+            waiterResponse.matched().response().ifPresent(System.out::println);
+        } catch (Exception e) {
             throw new Error(e);
         }
-        
     }
 
     public void dropTable() {
-        this.table = this.dynamoDB.getTable("casbin_rule");
         try {
-            this.table.delete();
-            this.table.waitForDelete();
-        }
-        catch (Exception e) {
+            DeleteTableRequest request = DeleteTableRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .build();
+            client.deleteTable(request);
+            
+            // Wait for table to be deleted
+            DynamoDbWaiter waiter = client.waiter();
+            DescribeTableRequest describeRequest = DescribeTableRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .build();
+            WaiterResponse<DescribeTableResponse> waiterResponse = 
+                    waiter.waitUntilTableNotExists(describeRequest);
+            waiterResponse.matched().response().ifPresent(System.out::println);
+        } catch (Exception e) {
             throw new Error(e);
         }
     }
 
     private List<CasbinRule> getAllItem() {
         List<CasbinRule> rules = new ArrayList<>();
-        ScanSpec scanSpec = new ScanSpec();
-        ItemCollection<ScanOutcome> items = this.table.scan(scanSpec);
-        Iterator<Item> iter = items.iterator();
-        while (iter.hasNext()) {
-            Item item = iter.next();
-            CasbinRule line = new CasbinRule();
-            line.ptype = item.get("ptype").toString();
-            line.v0 = item.get("v0") != null ? item.get("v0").toString() : "";
-            line.v1 = item.get("v1") != null ? item.get("v1").toString() : "";
-            line.v2 = item.get("v2") != null ? item.get("v2").toString() : "";
-            line.v3 = item.get("v3") != null ? item.get("v3").toString() : "";
-            line.v4 = item.get("v4") != null ? item.get("v4").toString() : "";
-            line.v5 = item.get("v5") != null ? item.get("v5").toString() : "";
-            rules.add(line);
+        try {
+            ScanRequest scanRequest = ScanRequest.builder()
+                    .tableName(TABLE_NAME)
+                    .build();
+            
+            ScanResponse response = client.scan(scanRequest);
+            
+            for (Map<String, AttributeValue> item : response.items()) {
+                CasbinRule line = new CasbinRule();
+                line.ptype = getAttributeValue(item, "ptype");
+                line.v0 = getAttributeValue(item, "v0");
+                line.v1 = getAttributeValue(item, "v1");
+                line.v2 = getAttributeValue(item, "v2");
+                line.v3 = getAttributeValue(item, "v3");
+                line.v4 = getAttributeValue(item, "v4");
+                line.v5 = getAttributeValue(item, "v5");
+                rules.add(line);
+            }
+        } catch (Exception e) {
+            throw new Error(e);
         }
         return rules;
+    }
+    
+    private String getAttributeValue(Map<String, AttributeValue> item, String key) {
+        AttributeValue value = item.get(key);
+        if (value != null && value.s() != null) {
+            return value.s();
+        }
+        return "";
     }
 
     private void loadPolicyLine(CasbinRule line, Model model) {
@@ -182,15 +214,22 @@ public class DynamoDBAdapter implements Adapter
     }
     
     private void putCasbinRuleItem(CasbinRule line) {
-        Item item = new Item().withPrimaryKey("ID", UUID.randomUUID().toString())
-                                .with("ptype", line.ptype)
-                                .with("v0", line.v0)
-                                .with("v1", line.v1)
-                                .with("v2", line.v2)
-                                .with("v3", line.v3)
-                                .with("v4", line.v4)
-                                .with("v5", line.v5);
-        this.table.putItem(item);
+        Map<String, AttributeValue> item = new HashMap<>();
+        item.put("ID", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
+        item.put("ptype", AttributeValue.builder().s(line.ptype != null ? line.ptype : "").build());
+        item.put("v0", AttributeValue.builder().s(line.v0 != null ? line.v0 : "").build());
+        item.put("v1", AttributeValue.builder().s(line.v1 != null ? line.v1 : "").build());
+        item.put("v2", AttributeValue.builder().s(line.v2 != null ? line.v2 : "").build());
+        item.put("v3", AttributeValue.builder().s(line.v3 != null ? line.v3 : "").build());
+        item.put("v4", AttributeValue.builder().s(line.v4 != null ? line.v4 : "").build());
+        item.put("v5", AttributeValue.builder().s(line.v5 != null ? line.v5 : "").build());
+        
+        PutItemRequest request = PutItemRequest.builder()
+                .tableName(TABLE_NAME)
+                .item(item)
+                .build();
+        
+        client.putItem(request);
     }
 
 
