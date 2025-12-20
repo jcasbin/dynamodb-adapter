@@ -9,18 +9,25 @@ DynamoDB Adapter
 
 DynamoDB Adapter is the [Amazon DynamoDB](https://en.wikipedia.org/wiki/Amazon_DynamoDB) adapter for [jCasbin](https://github.com/casbin/jcasbin), which provides interfaces for loading policies from DynamoDB and saving policies to it. 
 
-Currently we only support fot the following interfaces:
+**This adapter has been modernized to use AWS SDK v2 and supports zero-dependency testing with Testcontainers + LocalStack.**
+
+## Features
+
+- ✅ **AWS SDK v2**: Uses the modern AWS SDK v2 for DynamoDB operations
+- ✅ **Zero-dependency Testing**: Integration tests run with Testcontainers + LocalStack (no AWS credentials required)
+- ✅ **Java 8+**: Compatible with Java 8 and higher
+
+Currently we support the following interfaces:
 - `loadPolicy`
 - `savePolicy`
 
 ## Installation
-```
+```xml
 <dependency>
     <groupId>org.casbin</groupId>
     <artifactId>dynamodb-adapter</artifactId>
     <version>0.0.1</version>
 </dependency>
-
 ```
 
 ## Example
@@ -28,24 +35,38 @@ Currently we only support fot the following interfaces:
 package com.company.example;
 
 import org.casbin.jcasbin.main.Enforcer;
-import org.casbin.jcasbin.util.Util;
 import org.casbin.adapter.DynamoDBAdapter;
 
 public class Example {
     
-    Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
+    public static void main(String[] args) {
+        Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv");
 
-    String endpoint = "http://localhost:8000";
-    String region = "cn-north-1";
-    DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
+        String endpoint = "http://localhost:8000";
+        String region = "cn-north-1";
+        DynamoDBAdapter a = new DynamoDBAdapter(endpoint, region);
 
-    // Save policy to DB
-    a.savePolicy(e.getModel());
+        // Create table (only needed once)
+        a.createTable();
 
-    // Load policy from DB
-    a.loadPolicy(e.getModel());
+        // Save policy to DB
+        a.savePolicy(e.getModel());
+
+        // Load policy from DB
+        a.loadPolicy(e.getModel());
+    }
 }
 ```
+
+## Testing
+
+This adapter uses Testcontainers with LocalStack for integration testing. To run tests:
+
+```bash
+mvn test
+```
+
+**No AWS credentials or configuration required!** Tests automatically start a LocalStack container with DynamoDB support.
 
 ## Getting Help
 
