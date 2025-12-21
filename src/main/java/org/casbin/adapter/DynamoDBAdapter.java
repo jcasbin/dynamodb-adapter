@@ -214,15 +214,7 @@ public class DynamoDBAdapter implements Adapter
     }
     
     private void putCasbinRuleItem(CasbinRule line) {
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put("ID", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
-        item.put("ptype", AttributeValue.builder().s(line.ptype != null ? line.ptype : "").build());
-        item.put("v0", AttributeValue.builder().s(line.v0 != null ? line.v0 : "").build());
-        item.put("v1", AttributeValue.builder().s(line.v1 != null ? line.v1 : "").build());
-        item.put("v2", AttributeValue.builder().s(line.v2 != null ? line.v2 : "").build());
-        item.put("v3", AttributeValue.builder().s(line.v3 != null ? line.v3 : "").build());
-        item.put("v4", AttributeValue.builder().s(line.v4 != null ? line.v4 : "").build());
-        item.put("v5", AttributeValue.builder().s(line.v5 != null ? line.v5 : "").build());
+        Map<String, AttributeValue> item = buildItemFromCasbinRule(line);
         
         PutItemRequest request = PutItemRequest.builder()
                 .tableName(TABLE_NAME)
@@ -232,18 +224,104 @@ public class DynamoDBAdapter implements Adapter
         client.putItem(request);
     }
 
+    private Map<String, AttributeValue> buildItemFromCasbinRule(CasbinRule line) {
+        Map<String, AttributeValue> item = new HashMap<>();
+        item.put("ID", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
+        item.put("ptype", AttributeValue.builder().s(line.ptype != null ? line.ptype : "").build());
+        item.put("v0", AttributeValue.builder().s(line.v0 != null ? line.v0 : "").build());
+        item.put("v1", AttributeValue.builder().s(line.v1 != null ? line.v1 : "").build());
+        item.put("v2", AttributeValue.builder().s(line.v2 != null ? line.v2 : "").build());
+        item.put("v3", AttributeValue.builder().s(line.v3 != null ? line.v3 : "").build());
+        item.put("v4", AttributeValue.builder().s(line.v4 != null ? line.v4 : "").build());
+        item.put("v5", AttributeValue.builder().s(line.v5 != null ? line.v5 : "").build());
+        return item;
+    }
+
+    private void writeBatchWithRetry(List<WriteRequest> writeRequests) {
+        List<WriteRequest> unprocessedItems = new ArrayList<>(writeRequests);
+        int retryCount = 0;
+        int maxRetries = 5;
+        long initialBackoffMs = 50;
+        
+        while (!unprocessedItems.isEmpty() && retryCount < maxRetries) {
+            Map<String, List<WriteRequest>> requestItems = new HashMap<>();
+            requestItems.put(TABLE_NAME, unprocessedItems);
+            
+            BatchWriteItemRequest batchRequest = BatchWriteItemRequest.builder()
+                    .requestItems(requestItems)
+                    .build();
+            
+            BatchWriteItemResponse response = client.batchWriteItem(batchRequest);
+            
+            // Get any unprocessed items for retry
+            Map<String, List<WriteRequest>> unprocessed = response.unprocessedItems();
+            if (unprocessed != null && unprocessed.containsKey(TABLE_NAME)) {
+                unprocessedItems = new ArrayList<>(unprocessed.get(TABLE_NAME));
+                retryCount++;
+                
+                if (!unprocessedItems.isEmpty()) {
+                    // Exponential backoff
+                    long backoffMs = initialBackoffMs * (long) Math.pow(2, retryCount - 1);
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new Error("Interrupted during backoff", e);
+                    }
+                }
+            } else {
+                // All items processed successfully
+                unprocessedItems.clear();
+            }
+        }
+        
+        if (!unprocessedItems.isEmpty()) {
+            throw new Error("Failed to write all items after " + maxRetries + " retries. " +
+                    unprocessedItems.size() + " items remaining.");
+        }
+    }
+
+    private void batchSaveRows(List<CasbinRule> rules) {
+        if (rules.isEmpty()) {
+            return;
+        }
+        
+        int batchSize = 25; // DynamoDB batch write limit
+        List<WriteRequest> batch = new ArrayList<>();
+        
+        for (CasbinRule rule : rules) {
+            Map<String, AttributeValue> item = buildItemFromCasbinRule(rule);
+            WriteRequest writeRequest = WriteRequest.builder()
+                    .putRequest(PutRequest.builder().item(item).build())
+                    .build();
+            batch.add(writeRequest);
+            
+            if (batch.size() >= batchSize) {
+                writeBatchWithRetry(batch);
+                batch.clear();
+            }
+        }
+        
+        // Write any remaining items
+        if (!batch.isEmpty()) {
+            writeBatchWithRetry(batch);
+        }
+    }
+
 
     /**
-     * svePolicy saves all policy rules to the storage.
+     * savePolicy saves all policy rules to the storage.
      */
     @Override
     public void savePolicy(Model model) {
+        List<CasbinRule> allRules = new ArrayList<>();
+        
         for (Map.Entry<String, Assertion> entry : model.model.get("p").entrySet()) {
                 String ptype = entry.getKey();
                 Assertion ast = entry.getValue();
                 for (List<String> rule : ast.policy) {
                     CasbinRule line = savePolicyLine(ptype, rule);
-                    putCasbinRuleItem(line);
+                    allRules.add(line);
                 }
         }
 
@@ -252,9 +330,11 @@ public class DynamoDBAdapter implements Adapter
             Assertion ast = entry.getValue();
             for (List<String> rule : ast.policy) {
                 CasbinRule line = savePolicyLine(ptype, rule);
-                putCasbinRuleItem(line);
+                allRules.add(line);
             }
         }
+        
+        batchSaveRows(allRules);
     }
 
     /**
