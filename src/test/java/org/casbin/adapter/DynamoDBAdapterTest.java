@@ -102,4 +102,30 @@ public class DynamoDBAdapterTest
              asList("data2_admin", "data2", "write")));
          adapter.dropTable();
      }
+
+     @Test
+     public void testPerformanceAndLimits() {
+         // Test with more than 25 rules to verify batch processing works correctly
+         Enforcer e = new Enforcer("examples/rbac_model.conf");
+
+         adapter.createTable();
+
+         // Add 30 policy rules to test batch writing (exceeds DynamoDB's 25-item limit per batch)
+         List<List<String>> expectedPolicies = new ArrayList<>();
+         for (int i = 0; i < 30; i++) {
+             List<String> rule = asList("user" + i, "data" + i, "read");
+             e.addPolicy(rule);
+             expectedPolicies.add(rule);
+         }
+
+         // Save all policies using batch write
+         adapter.savePolicy(e.getModel());
+
+         // Clear and reload to verify all policies were saved correctly
+         e.clearPolicy();
+         adapter.loadPolicy(e.getModel());
+
+         testGetPolicy(e, expectedPolicies);
+         adapter.dropTable();
+     }
 }
