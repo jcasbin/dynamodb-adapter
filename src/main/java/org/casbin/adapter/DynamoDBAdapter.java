@@ -214,15 +214,7 @@ public class DynamoDBAdapter implements Adapter
     }
     
     private void putCasbinRuleItem(CasbinRule line) {
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put("ID", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
-        item.put("ptype", AttributeValue.builder().s(line.ptype != null ? line.ptype : "").build());
-        item.put("v0", AttributeValue.builder().s(line.v0 != null ? line.v0 : "").build());
-        item.put("v1", AttributeValue.builder().s(line.v1 != null ? line.v1 : "").build());
-        item.put("v2", AttributeValue.builder().s(line.v2 != null ? line.v2 : "").build());
-        item.put("v3", AttributeValue.builder().s(line.v3 != null ? line.v3 : "").build());
-        item.put("v4", AttributeValue.builder().s(line.v4 != null ? line.v4 : "").build());
-        item.put("v5", AttributeValue.builder().s(line.v5 != null ? line.v5 : "").build());
+        Map<String, AttributeValue> item = buildItemFromCasbinRule(line);
         
         PutItemRequest request = PutItemRequest.builder()
                 .tableName(TABLE_NAME)
@@ -318,7 +310,7 @@ public class DynamoDBAdapter implements Adapter
 
 
     /**
-     * svePolicy saves all policy rules to the storage.
+     * savePolicy saves all policy rules to the storage.
      */
     @Override
     public void savePolicy(Model model) {
